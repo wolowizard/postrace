@@ -43,7 +43,7 @@ GetOptions(\%opt,
 pod2usage(-exitstatus => 0, -verbose => 2) if $opt{man};
 pod2usage(1) if ($opt{help} );
 
-my $MAILLOG  = @ARGV[0] || $OS_MAILLOG ;
+my $MAILLOG  = $ARGV[0] || $OS_MAILLOG ;
 my $msgid    = $opt{id};
 my $email    = $opt{email};
 
