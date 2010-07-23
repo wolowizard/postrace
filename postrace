@@ -1,0 +1,142 @@
+#! /usr/bin/env perl
+
+#
+# postrace - find logentrys for a specific mail 
+#
+use feature qw/switch/;
+
+#
+# where to find the mail logfile
+#
+my $OS_MAILLOG = '';
+given ($^O) {
+  when('netbsd')   { $OS_MAILLOG="/var/log/maillog" }
+  default          { $OS_MAILLOG="/var/log/mail" }
+}
+
+################################################
+# Change below at your own risk 
+#
+use strict;
+use diagnostics;
+use warnings;
+
+use Getopt::Long;
+use Pod::Usage;
+use IO::File;
+use IO::Zlib;
+use IO::Uncompress::AnyUncompress qw(anyuncompress $AnyUncompressError);
+
+my %opt=();
+#
+# check arguments
+#
+GetOptions(\%opt,
+           'help|?', 
+           'man',
+           'debug',
+           'id=s',
+           'email=s',
+    ) or pod2usage(2);
+
+# print help if option help is set or no arguments are given
+pod2usage(-exitstatus => 0, -verbose => 2) if $opt{man};
+pod2usage(1) if ($opt{help} );
+
+my $MAILLOG  = @ARGV[0] || $OS_MAILLOG ;
+my $msgid    = $opt{id};
+my $email    = $opt{email};
+
+#
+# main 
+#
+my %QueueIDs = ();
+print STDERR "opening file $MAILLOG\n";
+my $fh = new IO::File $MAILLOG;
+if (defined $fh) {
+    my $pos = $fh->getpos(); # store file position for rewind
+    # search queue IDs
+    while (<$fh>) {
+        chomp;
+        if ( $msgid && /.+ message-id=<$msgid>/) {
+            my $queueID = $_;
+            $queueID =~ s/.*\]:? (.+):.+/$1/;
+            print STDERR "$queueID" if($opt{debug});
+            $QueueIDs{$queueID}+=1;
+        }
+        if  ($email && /postfix\/qmgr.+ from=<$email>/i) {
+            my $queueID = $_;
+            $queueID =~ s/.*\]:? (.+):.+/$1/;
+            print STDERR "$queueID\n" if($opt{debug});
+            print STDERR $_."\n" if($opt{debug});
+            $QueueIDs{$queueID}+=1;
+        }
+
+    }
+    # rewind and print every line with relevant queue IDs
+    #print "\n\n------- Output --------\n\n";
+    $fh->setpos($pos);
+    while (<$fh>) {
+        my $ID_FOUND = 0;
+        foreach my $id ( keys %QueueIDs ) {
+            if ( / $id:/) {
+                print $_;
+                $ID_FOUND = 1;
+            }
+        }
+        print $_ if ( $ID_FOUND == 0 && $msgid && /$msgid/ );
+        print $_ if ( $ID_FOUND == 0 && $email && /<$email>/i );
+    }
+    $fh->close();
+} else {
+  die "cant open $MAILLOG: $!";
+}
+
+
+__END__
+
+=head1 NAME
+
+postrace - trace a message trough postfix logfiles
+
+=head1 SYNOPSIS
+
+postrace -[hm]  pritn help/manual
+postrace -i <Message-ID>
+
+ Options:
+   --help                  brief help message
+   --man                   full documentation
+   --debug                 debug output
+   --id=<MessageID>        Message-ID
+   --email=<Emailaddress>  Email
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help | -h>
+
+Print a brief help message and exits.
+
+=item B<--man | -m>
+
+Prints the manual page and exits.
+
+=item B<--id | -i>
+
+Look for entries related to this Message-ID.
+
+=item B<--email | -e>
+
+Look for entries related to this Emailaddress.
+
+=back
+
+=head1 DESCRIPTION
+
+B<postrace> takes a Message-Id as an Argument and searches the relevant lines
+in the postfix mail log.
+
+=cut
+
