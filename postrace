@@ -138,5 +138,17 @@ Look for entries related to this Emailaddress.
 B<postrace> takes a Message-Id as an Argument and searches the relevant lines
 in the postfix mail log.
 
+
+=head1 AUTHOR
+
+Peter Reich <pr@alles.prima.de>
+
+
+=head1 LICENSE
+
+This program is free software, you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+
 =cut
 
