@@ -69,7 +69,7 @@ foreach my $MAILLOG ( @$MAILLOGS ) {
                 print "$queueID" if ($opt{debug});
                 $QueueIDs{$queueID}+=1;
             }
-            if  ($email && /postfix\/.+=<$email>/i) {
+            if  ($email && /postfix\/(from|to)=<$email>/i) {
                 my $queueID = $_;
                 $queueID =~ s/^.+ postfix\/.*\]:? ([A-Z0-9]{8,10}):?.+/$1/;
                 print "$queueID\n" if ($opt{debug});
