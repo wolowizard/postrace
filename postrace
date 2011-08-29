@@ -112,8 +112,9 @@ postrace - trace a message trough postfix logfiles
 
 =head1 SYNOPSIS
 
-postrace [-hmd] -i <Message-ID>   [<log files ...>]
-postrace [-hmd] -e <Emailaddress> [<log files ...>]
+postrace [-hmd] --id E<lt>I<Message-ID>E<gt>  [E<lt>I<log files ...>E<gt>]
+
+postrace [-hmd] --email E<lt>I<Emailaddress>E<gt> [E<lt>I<log files ...>E<gt>]
 
  Options:
    --help                  brief help message
@@ -145,16 +146,29 @@ Look for entries related to this email address.
 =back
 
 
-
 =head1 DESCRIPTION
 
-B<postrace> takes a message-id or email address as an argument and searches the relevant lines
-in the postfix mail log. 
+B<postrace> takes a message-id or email address as an argument and searches
+the relevant lines in the postfix mail log. 
 
-Without the log file argument, postrace searches only the actual logfile. Postrace can search 
-in compressed log files.
+Without the log file argument, postrace searches only the actual logfile.
+Postrace can also search in compressed log files.
 
 
+=head1 EXAMPLES
+
+=over 8
+
+=item C<postrace --id 37656f83nedgeft@example.org>
+
+Search for a message ID in the actual logfile.
+
+=item C<postrace -e info@example.org /var/log/mail.1.gz /var/log/mail.2.gz>
+
+Search for a email address (sender or recipient) in the compressed logfiles
+C</var/log/mail.1.gz /var/log/mail.2.gz>.
+
+=back
 
 =head1 AUTHOR
 
