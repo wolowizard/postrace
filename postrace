@@ -1,10 +1,15 @@
 #! /usr/bin/env perl
 
+use strict;
+use diagnostics;
+use warnings;
 #
 # postrace - find logentrys for a specific mail 
 #
 use 5.10.0;
 use feature qw/switch/;
+
+our $VERSION = '1.0';
 
 #
 # where to find the mail logfile
@@ -18,9 +23,6 @@ given ($^O) {
 ################################################
 # Change below at your own risk 
 #
-use strict;
-use diagnostics;
-use warnings;
 
 use Getopt::Long;
 use Pod::Usage;
@@ -54,7 +56,7 @@ foreach my $MAILLOG ( @$MAILLOGS ) {
     my %QueueIDs = ();
     print "searching file $MAILLOG\n" if $opt{debug};
     my $fh;
-    if ($MAILLOG =~ /.*\.(bz2|gz|Z)$/) {
+    if ($MAILLOG =~ m/.*\.(bz2|gz|Z)$/xm) {
         $fh = new IO::Uncompress::AnyUncompress $MAILLOG;
     } else {
         $fh = new IO::File $MAILLOG;
@@ -63,15 +65,15 @@ foreach my $MAILLOG ( @$MAILLOGS ) {
         # search queue IDs
         while (<$fh>) {
             chomp;
-            if ( $msgid && /^.+ message-id=<$msgid>.*$/) {
+            if ( $msgid && m/^.+ message-id=<$msgid>.*$/xm) {
                 my $queueID = $_;
-                $queueID =~ s/.*\]:? (.+):.+/$1/;
+                $queueID =~ s/.*\]:? (.+):.+/$1/xm;
                 print "$queueID" if ($opt{debug});
                 $QueueIDs{$queueID}+=1;
             }
-            if  ($email && /postfix\/.+(from|to)=<$email>/i) {
+            if  ($email && m/postfix\/.+(from|to)=<$email>/ixm) {
                 my $queueID = $_;
-                $queueID =~ s/^.+ postfix\/.*\]:? ([A-Z0-9]{8,10}):?.+/$1/;
+                $queueID =~ s/^.+ postfix\/.*\]:? ([A-Z0-9]{8,10}):?.+/$1/; ## no critic
                 print "$queueID\n" if ($opt{debug});
                 #print $_."\n" if ($opt{debug});
                 $QueueIDs{$queueID}+=1;
@@ -81,7 +83,7 @@ foreach my $MAILLOG ( @$MAILLOGS ) {
         ## reopen and print every line with relevant queue IDs
         print "\n\n------- Output --------\n\n" if ($opt{debug});
         print "\nopening logfile $MAILLOG\n\n";
-        if ($MAILLOG =~ /.*\.(bz2|gz|Z)$/) {
+        if ($MAILLOG =~ m/.*\.(bz2|gz|Z)$/xm) {
             $fh = new IO::Uncompress::AnyUncompress $MAILLOG;
         } else {
             $fh = new IO::File $MAILLOG;
@@ -89,13 +91,13 @@ foreach my $MAILLOG ( @$MAILLOGS ) {
         while (<$fh>) {
             my $ID_FOUND = 0;
             foreach my $id ( keys %QueueIDs ) {
-                if ( / $id:/) {
+                if ( m/ $id:/xm) {
                     print $_;
                     $ID_FOUND = 1;
                 }
             }
-            print $_ if ( $ID_FOUND == 0 && $msgid && /$msgid/ );
-            print $_ if ( $ID_FOUND == 0 && $email && /<$email>/i );
+            print $_ if ( $ID_FOUND == 0 && $msgid && m/$msgid/xm );
+            print $_ if ( $ID_FOUND == 0 && $email && m/<$email>/ixm );
         }
         $fh->close();
     } else {
