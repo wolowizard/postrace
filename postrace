@@ -3,8 +3,9 @@
 use strict;
 use diagnostics;
 use warnings;
+
 #
-# postrace - find logentrys for a specific mail 
+# postrace - find logentrys for a specific mail
 #
 use 5.10.0;
 use feature qw/switch/;
@@ -16,12 +17,12 @@ our $VERSION = '1.0';
 #
 my $OS_MAILLOG = '';
 given ($^O) {
-  when('netbsd')   { $OS_MAILLOG="/var/log/maillog" }
-  default          { $OS_MAILLOG="/var/log/mail" }
+    when ('netbsd') { $OS_MAILLOG = "/var/log/maillog" }
+    default         { $OS_MAILLOG = "/var/log/mail" }
 }
 
 ################################################
-# Change below at your own risk 
+# Change below at your own risk
 #
 
 use Getopt::Long;
@@ -29,69 +30,70 @@ use Pod::Usage;
 use IO::File;
 use IO::Uncompress::AnyUncompress qw(anyuncompress $AnyUncompressError);
 
-my %opt=();
+my %opt = ();
+
 #
 # check arguments
 #
-GetOptions(\%opt,
-           'help|?', 
-           'man',
-           'debug|d',
-           'id=s',
-           'email=s',
-    ) or pod2usage(2);
+GetOptions( \%opt, 'help|?', 'man', 'debug|d', 'id=s', 'email=s', )
+  or pod2usage(2);
 
 # print help if option help is set or no arguments are given
-pod2usage(-exitstatus => 0, -verbose => 2) if $opt{man};
-pod2usage(1) if ($opt{help} );
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt{man};
+pod2usage(1) if ( $opt{help} );
 
-my $MAILLOGS = ($#ARGV >= 0 )? \@ARGV : [ $OS_MAILLOG ] ;
+my $MAILLOGS = ( $#ARGV >= 0 ) ? \@ARGV : [$OS_MAILLOG];
 my $msgid    = $opt{id};
 my $email    = $opt{email};
 
 #
-# main 
+# main
 #
-foreach my $MAILLOG ( @$MAILLOGS ) {
+foreach my $MAILLOG (@$MAILLOGS) {
     my %QueueIDs = ();
     print "searching file $MAILLOG\n" if $opt{debug};
     my $fh;
-    if ($MAILLOG =~ m/.*\.(bz2|gz|Z)$/xm) {
+    if ( $MAILLOG =~ m/.*\.(bz2|gz|Z)$/xm ) {
         $fh = new IO::Uncompress::AnyUncompress $MAILLOG;
-    } else {
+    }
+    else {
         $fh = new IO::File $MAILLOG;
     }
-    if (defined $fh) {
+    if ( defined $fh ) {
+
         # search queue IDs
         while (<$fh>) {
             chomp;
-            if ( $msgid && m/^.+ message-id=<$msgid>.*$/xm) {
+            if ( $msgid && m/^.+ message-id=<$msgid>.*$/xm ) {
                 my $queueID = $_;
                 $queueID =~ s/.*\]:? (.+):.+/$1/xm;
-                print "$queueID" if ($opt{debug});
-                $QueueIDs{$queueID}+=1;
+                print "$queueID" if ( $opt{debug} );
+                $QueueIDs{$queueID} += 1;
             }
-            if  ($email && m/postfix\/.+(from|to)=<$email>/ixm) {
+            if ( $email && m/postfix\/.+(from|to)=<$email>/ixm ) {
                 my $queueID = $_;
-                $queueID =~ s/^.+ postfix\/.*\]:? ([A-Z0-9]{8,10}):?.+/$1/; ## no critic
-                print "$queueID\n" if ($opt{debug});
+                $queueID =~
+                  s/^.+ postfix\/.*\]:? ([A-Z0-9]{8,10}):?.+/$1/;   ## no critic
+                print "$queueID\n" if ( $opt{debug} );
+
                 #print $_."\n" if ($opt{debug});
-                $QueueIDs{$queueID}+=1;
+                $QueueIDs{$queueID} += 1;
             }
         }
         $fh->close;
         ## reopen and print every line with relevant queue IDs
-        print "\n\n------- Output --------\n\n" if ($opt{debug});
+        print "\n\n------- Output --------\n\n" if ( $opt{debug} );
         print "\nopening logfile $MAILLOG\n\n";
-        if ($MAILLOG =~ m/.*\.(bz2|gz|Z)$/xm) {
+        if ( $MAILLOG =~ m/.*\.(bz2|gz|Z)$/xm ) {
             $fh = new IO::Uncompress::AnyUncompress $MAILLOG;
-        } else {
+        }
+        else {
             $fh = new IO::File $MAILLOG;
         }
         while (<$fh>) {
             my $ID_FOUND = 0;
             foreach my $id ( keys %QueueIDs ) {
-                if ( m/ $id:/xm) {
+                if (m/ $id:/xm) {
                     print $_;
                     $ID_FOUND = 1;
                 }
@@ -100,11 +102,11 @@ foreach my $MAILLOG ( @$MAILLOGS ) {
             print $_ if ( $ID_FOUND == 0 && $email && m/<$email>/ixm );
         }
         $fh->close();
-    } else {
-      warn "cant open $MAILLOG: $!";
+    }
+    else {
+        warn "cant open $MAILLOG: $!";
     }
 }
-
 
 __END__
 
