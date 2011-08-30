@@ -1,0 +1,29 @@
+---
+abstract: 'trace a message trough postfix logfiles'
+author:
+  - 'Peter Reich <pr@alles.prima.de>'
+build_requires:
+  ExtUtils::MakeMaker: 6.42
+  Test::More: 0.96
+configure_requires:
+  ExtUtils::MakeMaker: 6.42
+distribution_type: module
+generated_by: 'Module::Install version 1.00'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: postrace
+no_index:
+  directory:
+    - inc
+    - t
+requires:
+  Getopt::Long: 2.28
+  IO::File: 1.14
+  IO::Uncompress::AnyUncompress: 2.033
+  Pod::Usage: 1.36
+  perl: 5.10.0
+resources:
+  license: http://dev.perl.org/licenses/
+version: 1.0
