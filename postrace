@@ -7,18 +7,21 @@ use warnings;
 #
 # postrace - find logentrys for a specific mail
 #
+# Author: Peter Reich <pr@alles.prima.de> 
+#
+# This program is free software, you can redistribute it and/or modify
+# it under the same terms as Perl itself.
+#
 use 5.10.0;
-use feature qw/switch/;
 
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 
 #
 # where to find the mail logfile
 #
-my $OS_MAILLOG = '';
-given ($^O) {
-    when ('netbsd') { $OS_MAILLOG = "/var/log/maillog" }
-    default         { $OS_MAILLOG = "/var/log/mail" }
+my $OS_MAILLOG = '/var/log/mail';
+if ($^O =~ /bsd$/) {
+    $OS_MAILLOG = '/var/log/maillog';
 }
 
 ################################################
@@ -90,16 +93,26 @@ foreach my $MAILLOG (@$MAILLOGS) {
         else {
             $fh = new IO::File $MAILLOG;
         }
+        my $tmpMsgId = '';
         while (<$fh>) {
-            my $ID_FOUND = 0;
-            foreach my $id ( keys %QueueIDs ) {
-                if (m/ $id:/xm) {
+            my $QID_FOUND = 0;
+            foreach my $Qid ( keys %QueueIDs ) {
+                if (m/ $Qid:/xm) {
                     print $_;
-                    $ID_FOUND = 1;
+                    $QID_FOUND = 1;
+                    # check for message-id 
+                    if (!$tmpMsgId && m/: message-id=/) {
+                        ($tmpMsgId = $_) =~ s/^.+: message-id=<(.+)>$/$1/;
+                    }
                 }
             }
-            print $_ if ( $ID_FOUND == 0 && $msgid && m/$msgid/xm );
-            print $_ if ( $ID_FOUND == 0 && $email && m/<$email>/ixm );
+            print $_ if ( $QID_FOUND == 0 && $msgid && m/id=<$msgid>/xm );
+            # look for other lines containing the messagid
+            if ( $QID_FOUND == 0 && !$msgid && $tmpMsgId && m/id=<$tmpMsgId>/xm ) {
+                # print and reset $tmpMsgId 
+                print $_;
+                $tmpMsgId = '';
+            }
         }
         $fh->close();
     }
@@ -153,7 +166,7 @@ Look for entries related to this email address.
 =head1 DESCRIPTION
 
 B<postrace> takes a message-id or email address as an argument and searches
-the relevant lines in the postfix mail log. 
+the relevant lines in postfix mail log files. 
 
 Without the log file argument, postrace searches only the actual logfile.
 Postrace can also search in compressed log files.
